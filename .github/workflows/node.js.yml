@@ -16,11 +16,14 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14, 16]
+        node-version: [16]
 
     steps:
     - uses: actions/checkout@v3
     - run: ls .
+    - name: Accessing reepository secret
+      run: echo secret - ${{ secrets.GENERICREPOSECRET }}
+    
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v3
       with:
@@ -35,12 +38,30 @@ jobs:
         name: ${{format('artifacts{0}', matrix.node-version)}}
         path: build
   
-  verify-build:
+  deploy-to-test:
     runs-on: ubuntu-latest
     needs: build
+    environment: test
+    concurrency: test
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: ${{format('artifacts{0}', '16')}}
       - run: ls .
+      - run: echo test secret - ${{ secrets.ConnectionString }}
+      - run: echo Deploying to TEST enviroment.
+      
+  deploy-to-prod:
+    runs-on: ubuntu-latest
+    needs: deploy-to-test
+    environment: prod
+    concurrency: prod
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{format('artifacts{0}', '16')}}
+      - run: ls .
+      - run: echo prod secret - ${{ secrets.ConnectionString }}
+      - run: echo Deploying to PROD enviroment.
